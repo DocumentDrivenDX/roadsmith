@@ -1,0 +1,8 @@
+version: 1
+
+flows:
+  - id: helix
+    root: docs/helix/
+
+autonomy:
+  level: high
