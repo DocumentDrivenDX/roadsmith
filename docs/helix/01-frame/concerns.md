@@ -39,13 +39,12 @@ TypeScript web application code. Module boundaries are defined in Design.
 | auth | library; `assumption` (Frame, autonomy high) | `area:api`, `area:data`, `area:ui` | Account-based product: workspaces own roadmaps and only members may read or change them (PRD FR-18, FR-19) | A real principal can sign up, sign in, and act only within their workspace; session issuance, rotation, and revocation; isolation enforced server-side through the principal |
 | admin-console | library; `assumption` (Frame, autonomy high) | `area:ui`, `area:api` | The PM manages mutable domain objects (items, goals, dependencies, periods) and lifecycle state (period close) through the UI | CRUD over every core domain object and its lifecycle actions is usable from the UI; the primary PM workflow runs end to end through the UI |
 | security-owasp | library; `assumption` (Frame, autonomy high) | `area:api`, `area:ui` | Accounts, invitations, and confidential roadmap content sent to an LLM need hardening | OWASP-aligned input validation, session and credential handling, and treatment of LLM output as untrusted input |
-| model-gateway | library | `area:api`, `area:infra` | AI-assisted drafting and critique call an LLM; the product should name models by alias, not by vendor endpoint | Alias set with an owner; per-environment alias-to-route resolution; deploy gate with one call per alias; evals rerun on any alias rebind; retry ownership in one layer |
+| datastore-postgresql | project-local; slot `datastore`; `operator-override` via [concerns.local.yml](concerns.local.yml); [concern](concerns/datastore-postgresql/concern.md), [practices](concerns/datastore-postgresql/practices.md) | `area:data`, `area:api`, `area:infra` | The operator chose PostgreSQL on 2026-11-10. HELIX has no library filler for this slot | Migrations only through the project command; every roadmap query scoped to the principal's workspace; integration tests against real PostgreSQL; an exercised restore |
+| relational-data-modeling | library; `shipped-default` (relational storage signal) | `area:data` | Items, scores, dependency edges, periods, and workspaces are stored relationally in PostgreSQL | 3NF/BCNF by default; declared foreign keys with deliberate referential actions; constraints in the schema; indexes justified by access patterns; versioned, reversible migrations |
+| model-gateway | library; provider Anthropic Claude (`operator-override`, 2026-11-10) | `area:api`, `area:infra` | AI-assisted drafting and critique call Anthropic Claude; the product names models by alias, not by vendor endpoint | Alias set with an owner; per-environment alias-to-route resolution; deploy gate with one call per alias; evals rerun on any alias rebind; retry ownership in one layer |
 
 **Pending selections** (resolved in Frame/Design, not at genesis):
 
-- `datastore` slot: no shipped default. Roadmap items, scores, and dependency
-  edges are structured, relational-shaped data. Choosing a SQL store would
-  also activate `relational-data-modeling`. Open question for Design.
 - `architecture-style` slot: no default; select on signal during Design.
 - `deploy-target` slot: undecided; open question for Design.
 

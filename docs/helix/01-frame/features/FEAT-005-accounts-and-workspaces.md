@@ -240,6 +240,10 @@ MEM-15. The owner must not be able to remove themselves or be removed.
 
 ## Constraints and Assumptions
 
+**Operator confirmation (2026-11-10)**: the numeric limits and targets this
+spec marks as assumptions are accepted as working values. Change them only
+through `evolve`. Measurement in Test may still revise performance targets.
+
 - **Constraint**: All sign-up, sign-in, sign-out, and session checks go through
   one authentication interface. An OIDC (OpenID Connect, the OpenID Foundation
   identity layer over OAuth 2.0) provider can replace local passwords without

@@ -405,12 +405,17 @@ incomplete, and offer a re-run.
 
 ## Constraints and Assumptions
 
+**Operator confirmation (2026-11-10)**: the numeric limits and targets this
+spec marks as assumptions are accepted as working values. Change them only
+through `evolve`. Measurement in Test may still revise performance targets.
+
 - **Constraint**: Scoring, ranking, sequencing, and plan checks work without the
   LLM; the AI layer only proposes (PRD Constraints; principle 8).
 - **Constraint**: Roadmap content is customer-confidential and is sent only on
   an explicit AI request (PRD Legal/Compliance).
 - **Constraint**: Models are named by alias through the model gateway
-  (`model-gateway` concern). Provider and alias set are chosen in Design.
+  (`model-gateway` concern). The provider is Anthropic Claude (operator,
+  2026-11-10). The alias set and model versions are chosen in Design.
 - **Constraint**: AI requests are traced as GenAI operations (`o11y-otel`
   concern).
 - **Assumption A1**: A proposal becomes stale when a value it changes was
@@ -444,8 +449,8 @@ incomplete, and offer a re-run.
   unsupported-input flags); FEAT-003 Sequencing and Capacity (cycle rule,
   placement, plan-check violations); the Accounts and Workspaces feature
   (workspace membership and edit access, FR-18, FR-19).
-- **External services**: An LLM provider reached through the model gateway by
-  alias (selected in Design); OpenTelemetry collection for GenAI operations.
+- **External services**: Anthropic Claude, reached through the model gateway
+  by alias (aliases selected in Design); OpenTelemetry collection for GenAI operations.
   Exact request, response, and telemetry surfaces live in Design Contracts.
 - **PRD requirements**: P0-6 (FR-12, FR-14, FR-15, FR-16, FR-17); P1-4
   (FR-13).
@@ -469,4 +474,4 @@ incomplete, and offer a re-run.
 - **Scheduled or continuous critique**: Critique runs only on request.
 - **Undo history**: Accepted changes become ordinary roadmap edits the PM can
   change by hand; no multi-step undo.
-- **Provider, model, and prompt choices**: Owned by Design.
+- **Model, alias, and prompt choices**: Owned by Design. The provider (Anthropic Claude) was chosen by the operator on 2026-11-10.

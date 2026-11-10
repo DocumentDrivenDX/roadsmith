@@ -351,6 +351,10 @@ browsers in a production-like environment.
 
 ## Constraints and Assumptions
 
+**Operator confirmation (2026-11-10)**: the numeric limits and targets this
+spec marks as assumptions are accepted as working values. Change them only
+through `evolve`. Measurement in Test may still revise performance targets.
+
 - Intake is deterministic and works with the AI service unavailable (FR-17;
   principle "Deterministic core, AI at the edge").
 - Assumption: "optional estimate fields" in FR-1 means the four RICE inputs.

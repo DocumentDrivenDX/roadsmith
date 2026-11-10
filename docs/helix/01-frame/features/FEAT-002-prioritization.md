@@ -118,7 +118,8 @@ mathematically equal must compare as equal (assumption A2).
 
 RANK-01. The system must order a roadmap's scored items by score, highest
 first, and give each a distinct position from 1 to N, where N is the number
-of scored items.
+of scored items. Items archived at period close (shipped or dropped, FR-11)
+must not appear in the ranking or count in N.
 
 RANK-02. When two scored items have equal scores, the system must order them
 by lower Effort first, then higher Confidence, then earlier creation in the
@@ -254,7 +255,8 @@ It must name the missing inputs instead.
 - **A1 — Input ranges**: Reach is a whole number 0–1,000,000,000; Impact uses
   the common RICE scale 0.25, 0.5, 1, 2, 3; Confidence is a whole-number
   percentage 0–100; Effort is greater than 0 and at most 10,000, with at most
-  two decimal places. The PRD does not define ranges; these are assumptions.
+  two decimal places. The operator accepted these ranges, and the other
+  numeric limits and targets in this spec, as working values on 2026-11-10.
 - **A2 — Exact comparison**: Mathematically equal scores tie even when
   computed from different inputs, for example 300 × 1 × 100% ÷ 3 and
   100 × 1 × 100% ÷ 1.
@@ -274,9 +276,9 @@ It must name the missing inputs instead.
   evidence note. The PM is responsible for updating a stale note.
 - **Constraint**: Scoring and ranking are deterministic and independent of the
   LLM (PRD Constraints; principle 8, "Deterministic core, AI at the edge").
-- **Open question**: Should items marked shipped or dropped at period close
-  (FR-11) stay in the ranked order? Blocks nothing in FEAT-002 v1 behavior,
-  which ranks every item in the roadmap. Owner: operator, with FEAT-003.
+- **Decision** (operator, 2026-11-10): Shipped and dropped items are
+  archived at period close and leave the ranking (RANK-01; FEAT-003 CLS-11).
+  Slipped items stay in the ranking.
 
 ## Dependencies
 

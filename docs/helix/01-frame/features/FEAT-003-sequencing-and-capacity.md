@@ -66,7 +66,7 @@ happened.
 | Dependencies (DEP) | Which items must finish before which? | Hold "blocked by" edges within one roadmap; reject cycles and name them. |
 | Placement and Auto-sequencing (SEQ) | Where does each item go, and why there? | Manual placement by pointer or keyboard; rank-order auto-sequencing with a stated reason per placement and per unplaced item. |
 | Plan Checks (CHK) | Where does my plan break? | Continuously report violations (blocking) and warnings (non-blocking), each naming the items and periods involved. |
-| Period Close (CLS) | What did we deliver against what we committed? | Record shipped, slipped, or dropped per item and the period's on-plan delivery rate. |
+| Period Start and Close (CLS) | What did we commit to, and what did we deliver against it? | Snapshot the commitment when a period starts; at close, record shipped, slipped (with reason), or dropped per item, the on-plan delivery rate, and the preventable-slip share; archive shipped and dropped items. |
 
 ### Domain terms
 
@@ -86,8 +86,17 @@ happened.
   clean plan.
 - **Open / closed period**: a period is open until the PM closes it
   (FR-11). Only open periods take placements and are checked.
+- **Started period**: an open period whose commitment has been recorded.
+  At most one period is started at a time.
 - **Committed items**: the items placed in a period at the moment the PM
-  closes it.
+  starts it. Moving a committed item out of the period later does not remove
+  it from the commitment.
+- **Added items**: items placed in a started period after it started. They
+  get an outcome at close but do not count in the period's rates.
+- **Slip reason**: why a committed item did not ship in its period:
+  dependency, capacity, or other.
+- **Archived item**: a shipped or dropped item after its period closes. It
+  leaves the backlog and ranking and stays visible in the period's history.
 
 ## Task Model
 
@@ -96,7 +105,7 @@ happened.
 | Declare which items block which | Every known "blocked by" edge is recorded, with no cycles | Sole or lead PM, team of 5–50 | "Tell me where my plan won't fit before I commit to it" | — | US-005 | declare-dependencies |
 | Set period capacity and sequence the backlog | Ranked items are placed into periods within capacity and after their blockers | Sole or lead PM, team of 5–50 | "Tell me where my plan won't fit before I commit to it" | — | US-006 | set-capacity-and-sequence |
 | Find and fix plan violations | The plan has zero violations and every warning is understood | Sole or lead PM, team of 5–50; Head of Product over 2–5 PMs | "Tell me where my plan won't fit before I commit to it" | — | US-007 | fix-plan-violations |
-| Close a finished period | Each committed item has an outcome and the period's on-plan delivery rate is recorded | Sole or lead PM, team of 5–50 | "Tell me where my plan won't fit before I commit to it" | — | US-008 | close-period |
+| Start a period, then close it | The commitment is recorded at start; at close each item has an outcome, each slip has a reason, and the period's rates are recorded | Sole or lead PM, team of 5–50 | "Tell me where my plan won't fit before I commit to it" | — | US-008 | close-period |
 
 ## Requirements
 
@@ -260,40 +269,65 @@ CHK-12. When the number of violations or warnings changes, the system must
 announce the new counts to assistive technology without moving keyboard
 focus.
 
-#### Period Close
+#### Period Start and Close
 
-CLS-01. The PM must be able to close the earliest open period, and only that
+CLS-01. The PM must be able to start the earliest open period when no other
+period is started. Starting must require confirmation.
+
+CLS-02. Starting a period must record the items placed in it at that moment
+as its committed items and show their count. Later placement changes must not
+change the recorded commitment.
+
+CLS-03. A started period must stay open: it must keep taking placements and
+must stay subject to plan checks. Items placed after start must be shown as
+added, separate from committed items.
+
+CLS-04. The PM must be able to close the started period, and only that
 period.
 
-CLS-02. Closing a period must require an outcome of shipped, slipped, or
-dropped for every item placed in it; the close must not complete while any
-item lacks an outcome.
+CLS-05. Closing must require an outcome of shipped, slipped, or dropped for
+every committed item and every added item. A committed item that is no
+longer placed in the period at close must be preset to slipped. The close
+must not complete while any item lacks an outcome.
 
-CLS-03. The close must require the PM to confirm, and the confirmation must
-state that recorded outcomes cannot be changed afterwards.
+CLS-06. Every slipped committed item must have a slip reason of dependency,
+capacity, or other. The close must not complete while any slipped committed
+item lacks a reason.
 
-CLS-04. On close, the system must record the period's on-plan delivery rate
-as shipped items ÷ committed items, shown as both a fraction and a
-percentage (for example "3 / 5, 60%").
+CLS-07. The close must require the PM to confirm, and the confirmation must
+state that recorded outcomes and reasons cannot be changed afterwards.
 
-CLS-05. A period closed with zero committed items must record its rate as
+CLS-08. On close, the system must record the period's on-plan delivery rate
+as shipped committed items ÷ committed items. It must show the rate as both a
+fraction and a percentage (for example "3 / 5, 60%"). Added items must not
+count in the rate.
+
+CLS-09. On close, the system must record the period's preventable-slip share
+as committed items slipped with reason dependency or capacity ÷ committed
+items, shown the same way.
+
+CLS-10. A period closed with zero committed items must record both figures as
 "no committed items", not as 0%.
 
-CLS-06. On close, each shipped item must become shipped and must no longer
-be offered for placement or auto-sequencing.
+CLS-11. On close, each shipped item and each dropped item must be archived.
+It must leave the backlog, the ranking, and the pool of placeable items, and
+must stay visible in the closed period's history.
 
-CLS-07. On close, each slipped item and each dropped item must become
-unplaced in the backlog and keep its recorded outcome for that period.
+CLS-12. On close, each slipped item must return to the backlog unplaced,
+unless the PM already placed it in a later open period, where it must stay.
+Its outcome and reason must be kept in the closed period's history.
 
-CLS-08. A closed period must leave the list of open periods and must take no
+CLS-13. A closed period must leave the list of open periods and must take no
 further placements, checks, or auto-sequencing.
 
-CLS-09. The system must keep each closed period's name, close date, items,
-outcomes, and on-plan delivery rate, and show them to the PM.
+CLS-14. The system must keep each closed period's name, start date, close
+date, committed items, added items, outcomes, slip reasons, and both
+figures, and must show them to the PM.
 
 ### Non-Functional Requirements
 
-- **Performance** *(assumption: targets not backed by measurement)*:
+- **Performance** *(working values accepted by the operator on 2026-11-10;
+  not yet backed by measurement)*:
   - After any edit, updated check findings appear within 200 ms at the
     95th percentile for a roadmap of 500 items, 2,000 dependencies, and 24
     open periods.
@@ -321,7 +355,7 @@ outcomes, and on-plan delivery rate, and show them to the PM.
 - [US-005 — Declare dependencies](../user-stories/US-005-declare-dependencies.md)
 - [US-006 — Set capacity and auto-sequence](../user-stories/US-006-set-capacity-and-auto-sequence.md)
 - [US-007 — See plan violations](../user-stories/US-007-see-plan-violations.md)
-- [US-008 — Close a period](../user-stories/US-008-close-a-period.md)
+- [US-008 — Start and close a period](../user-stories/US-008-close-a-period.md)
 
 ## Edge Cases and Error Handling
 
@@ -343,11 +377,20 @@ outcomes, and on-plan delivery rate, and show them to the PM.
 - **Capacity budget set to 0**: Any placed item with Effort above 0 causes a
   capacity violation; auto-sequencing places no items into that period,
   since items without Effort are never auto-placed (A4).
-- **Blocker dropped at period close**: The blocker becomes unplaced; each
-  placed dependent shows an unplaced-blocker warning.
+- **Blocker shipped at period close**: The blocker is archived and its
+  dependency is satisfied; its dependents show no finding for it.
+- **Blocker dropped at period close**: The blocker is archived as dropped.
+  Each placed dependent shows the unplaced-blocker warning (CHK-06), naming
+  the blocker as dropped, until the PM removes the dependency.
 - **Blocker slipped at period close**: The blocker becomes unplaced; its
   placed dependents show unplaced-blocker warnings until the blocker is
   placed again.
+- **Period started with zero placed items**: The start is allowed; the
+  commitment is empty and both figures at close read "no committed items".
+- **Committed item deleted mid-period**: The item stays in the recorded
+  commitment and is preset to dropped at close (assumption A14).
+- **Starting a later period while an earlier one is started**: Not allowed;
+  the PM is told to close the started period first (CLS-01).
 - **Rank ties**: Auto-sequencing uses the ranked order exactly as FEAT-002
   defines it, including FEAT-002's tie-break; this feature adds no
   tie-break of its own.
@@ -362,8 +405,10 @@ outcomes, and on-plan delivery rate, and show them to the PM.
   mitigation: "Measure the estimated-item share").
 - Share of auto-sequenced placements the PM moves by hand before the period
   closes, as a signal of trust in the rank-order rule.
-- On-plan delivery rate per closed period (CLS-04), the input to the PRD's
-  North Star metric.
+- On-plan delivery rate and preventable-slip share per closed period
+  (CLS-08, CLS-09), the inputs to the PRD's North Star metric.
+- Share of slips by reason (dependency, capacity, other) across closed
+  periods.
 - Share of roadmaps whose non-final open periods all have a capacity budget.
 
 ## Constraints and Assumptions
@@ -389,37 +434,37 @@ outcomes, and on-plan delivery rate, and show them to the PM.
   Auto-sequencing is greedy in rank order, not an optimal packing.
 - **Assumption A6**: Auto-sequencing may place a dependent in its blocker's
   period, as FR-9's "no earlier than" allows; that placement raises the
-  CHK-04 warning. If the operator rules same-period a violation, SEQ-05
-  changes to "later than".
+  CHK-04 warning. The operator confirmed on 2026-11-10 that same-period is
+  a warning (PRD FR-10).
 - **Assumption A7**: A placed dependent whose blocker is unplaced is a
   warning (CHK-06), not a violation, because FR-10 defines violations only
   by period order.
-- **Assumption A8**: Committed items are those placed in the period at
-  close. Items moved out before close do not count as committed or slipped.
-- **Assumption A9**: The on-plan delivery rate counts items, not effort, and
-  dropped items count in the denominator.
-- **Assumption A10**: Only the earliest open period can be closed, and
-  outcomes are final once the close is confirmed. Horizons do not rename
-  themselves after a close; the PM renames or adds periods.
+- **Decision A8** (operator, 2026-11-10): Committed items are those placed
+  in the period when the PM starts it (CLS-02). Committed items moved out
+  mid-period count as slipped (CLS-05).
+- **Assumption A9**: Both figures count items, not effort. Dropped committed
+  items count in the denominator.
+- **Assumption A10**: Only the earliest open period can be started, only one
+  period is started at a time, and outcomes are final once the close is
+  confirmed. Horizons do not rename themselves after a close; the PM renames
+  or adds periods.
 - **Assumption A11**: A one-step revert of the latest auto-sequencing run
   (SEQ-13) satisfies "prefer reversible decisions"; there is no general
   undo history in this feature.
 - **Assumption A12**: The performance and scale targets in Non-Functional
-  Requirements are set at about four times the PRD persona backlog and are
-  not backed by measurement (PRD open question on numeric limits).
-- **Assumption A13**: After close, shipped items stay in the roadmap marked
-  shipped and leave the placeable pool; slipped and dropped items stay in
-  the backlog, unplaced (CLS-06, CLS-07). FEAT-002 keeps ranking all of
-  them. This answers the PRD open question on archiving shipped and dropped
-  items provisionally; the operator decides.
-- **Open question (PRD)**: Should a dependent in the same period as its
-  blocker be a violation, a warning, or allowed? FEAT-003 proposes a warning
-  (CHK-04, A6). Owner: operator.
-- **Open question**: Should committed items be captured when a period
-  starts rather than at close (A8)? A start-time capture would count items
-  moved out mid-period as slipped, closer to the North Star's wording, but
-  needs a "start period" action that no PRD requirement names. Owner:
-  operator.
+  Requirements are set at about four times the PRD persona backlog. The
+  operator accepted them as working values on 2026-11-10; measurement in
+  Test confirms or revises them.
+- **Decision A13** (operator, 2026-11-10): At close, shipped and dropped
+  items are archived out of the backlog and ranking, and slipped items return
+  to the backlog unplaced (CLS-11, CLS-12). FEAT-002 ranks only non-archived
+  items.
+- **Assumption A14**: A committed item deleted mid-period stays in the
+  recorded commitment and is preset to dropped at close, so deletion cannot
+  improve the on-plan delivery rate.
+- **Decision** (operator, 2026-11-10): Every slipped committed item records
+  a reason of dependency, capacity, or other (CLS-06), so the North Star can
+  separate preventable slips.
 
 ## Dependencies
 

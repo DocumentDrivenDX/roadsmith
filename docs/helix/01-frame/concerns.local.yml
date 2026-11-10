@@ -1,0 +1,6 @@
+# Operator slot overrides for Roadsmith.
+# Recorded 2026-11-10: the operator chose PostgreSQL for the `datastore` slot,
+# which has no shipped default or library filler. The filler is project-owned:
+# docs/helix/01-frame/concerns/datastore-postgresql/{concern.md,practices.md}.
+defaults:
+  datastore: datastore-postgresql

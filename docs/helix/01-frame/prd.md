@@ -73,7 +73,7 @@ roadmap as text with no dependency or capacity model [F17, F18].
 
 | Metric | Target | Measurement Method |
 |--------|--------|--------------------|
-| On-plan delivery rate (vision North Star) | Hypothesis: rises over a team's first two planning cycles; baseline to be measured | Period-close records (FR-11): shipped-in-period ÷ committed-in-period |
+| On-plan delivery rate (vision North Star) | Hypothesis: rises over a team's first two planning cycles; baseline to be measured | Period records (FR-11): shipped committed items ÷ items committed at period start, read together with the preventable-slip share (slips with a dependency or capacity reason ÷ committed) |
 | Time to first clean roadmap | Hypothesis: < 60 min for a 50–100 item backlog | Product analytics: time from first import to first plan with zero blocking violations |
 | Critique diff acceptance rate by finding type | Learning goal, no target | Accept/reject events per finding category |
 | Unsupported-score share at commit | Learning goal: expected to fall as PMs add evidence | Share of committed items with ≥1 unsupported RICE input at period start |
@@ -155,8 +155,8 @@ stated evidence. She shares a workspace with her PMs (P1).
 
 1. Evidence notes on score inputs, with unsupported inputs flagged (FR-5).
 2. Rank sensitivity to a lowered Confidence value (FR-6).
-3. Period close with shipped, slipped, or dropped outcomes and the on-plan
-   delivery rate (FR-11).
+3. Period start and close: commitment snapshot, shipped, slipped, or dropped
+   outcomes with slip reasons, on-plan delivery rate, and archiving (FR-11).
 4. AI extraction of proposed backlog items from unstructured notes (FR-13).
 5. Workspace invitations for teammates with edit access (FR-19).
 6. Password reset by email (FR-20). It shares the outbound email dependency
@@ -214,10 +214,20 @@ Not yet decomposed into FRs. Frame them when promoted.
 - **FR-10** — The system continuously reports plan violations. An item placed
   in an earlier period than one of its blockers is a dependency-order
   violation. A period whose placed effort exceeds its capacity is a capacity
-  violation. Each violation names the items and periods involved.
-- **FR-11** — At period close, the PM marks each item placed in the period
-  as shipped, slipped, or dropped. The system records the period's on-plan
-  delivery rate.
+  violation. Each violation names the items and periods involved. A dependent
+  item placed in the same period as its blocker is reported as a warning, not
+  a violation.
+- **FR-11** — The PM starts a period, which records the items placed in it
+  at that moment as the period's commitment. At period close, the PM marks
+  each committed item as shipped, slipped, or dropped. Committed items moved
+  out during the period count as slipped. Every slipped item needs a reason:
+  dependency, capacity, or other. The system records two figures for the
+  period. The on-plan delivery rate is shipped committed items ÷ committed
+  items. The preventable-slip share is items slipped for a dependency or
+  capacity reason ÷ committed items. Shipped and dropped items are archived
+  out of the backlog and ranking, and stay visible in the period's history.
+  Slipped items not already placed in a later period return to the backlog
+  unplaced.
 
 ### Subsystem: AI Assistance
 
@@ -283,10 +293,13 @@ Design.
   CSS 4 tokens, Playwright for browser e2e (`e2e-playwright`)
 - **Auth**: local sessions with a documented swap path to OIDC
   (`auth-local-sessions`)
-- **AI**: LLM calls go through named model aliases (`model-gateway`). The
-  provider and the alias set are decided in Design. Proposals use structured
+- **AI**: Anthropic Claude (operator choice, 2026-11-10). LLM calls go
+  through named model aliases (`model-gateway`), so the provider can change
+  without product changes. The alias set and model versions are decided in
+  Design. Proposals use structured
   output validated against the roadmap model.
-- **Data/Storage**: undecided (`datastore` slot open)
+- **Data/Storage**: PostgreSQL (operator choice, 2026-11-10; version pinned
+  in Design), modeled under `relational-data-modeling`
 - **Observability**: OpenTelemetry for service, frontend, and GenAI-operation
   signals (`o11y-otel`)
 - **Platform Targets**: desktop browsers, current Chrome, Firefox, Safari,
@@ -300,8 +313,9 @@ Design.
   without the LLM (FR-17). The AI layer only proposes changes.
 - **Technical**: Meet WCAG 2.x AA, including a keyboard alternative to every
   drag interaction (`a11y-wcag-aa`).
-- **Business**: No budget, launch date, or pricing decision has been made
-  yet. None is assumed here.
+- **Business**: No pricing or packaging decision constrains v1 (operator,
+  2026-11-10). No budget or launch date is set. Pricing is revisited in a
+  later business case.
 - **Legal/Compliance**: Roadmap content is customer-confidential. It is sent
   to the LLM provider only on an explicit AI request.
 
@@ -320,8 +334,10 @@ Design.
 
 ### Dependencies
 
-- An LLM provider reachable through the model gateway (selected in Design).
-- A datastore (selected in Design).
+- Anthropic's API, reached through the model gateway.
+- A PostgreSQL database.
+- An outbound email service for invitations and password reset (FR-19,
+  FR-20; selected in Design).
 - Governing artifacts: [product-vision](../00-discover/product-vision.md),
   [competitive-analysis](../00-discover/competitive-analysis.md),
   [concerns](concerns.md), [principles](principles.md).
@@ -333,38 +349,31 @@ Design.
 | PMs skip effort and capacity entry, so checks find nothing | Med | High | Import maps estimate columns. Unestimated items in a period are flagged as a check finding. Measure the estimated-item share in the first usability test |
 | AI critique produces noisy or wrong findings and loses trust | Med | High | Every AI proposal passes deterministic validation (FR-16). Build a bounded critique evaluation set in Test and track acceptance rate by category |
 | LLM cost per critique is too high for small-team pricing | Med | Med | Send only the roadmap model, not the full history. Record token usage per request through GenAI telemetry, and set a per-request token budget in Design |
-| Roadmap data sent to the LLM raises confidentiality objections | Med | Med | Send data only on an explicit AI request (constraint above). Document what is sent. Choose a provider with no-training data terms in Design |
+| Roadmap data sent to the LLM raises confidentiality objections | Med | Med | Send data only on an explicit AI request (constraint above). Document what is sent. Confirm in Design that Anthropic's commercial API terms exclude training on customer data, and record the evidence |
 | Scope drifts toward an issue tracker or feedback suite | Med | Med | Non-goals above. `scope-discipline` concern applies to every work item |
 
 ## Open Questions
 
-- [ ] Which datastore? Blocks the data model and migrations in Design. Ask
-  the operator, informed by a Design ADR.
-- [ ] Which LLM provider, and which model aliases? Blocks the AI
-  Assistance design and the cost estimate. Ask the operator in Design.
-- [ ] Should a dependent item in the **same** period as its blocker be a
-  violation, a warning, or allowed? Blocks FR-10 detail. Ask the operator.
-  The feature spec proposes a warning.
-- [ ] Do items marked shipped or dropped at period close (FR-11) stay in the
-  ranking and backlog, or move to an archive? Blocks FEAT-002 and FEAT-003
-  detail for closed periods. Ask the operator.
-- [ ] Should a period's commitment be captured when the period starts rather
-  than at close? Should a slip record its reason (dependency, capacity,
-  other)? The North Star counts only slips caused by dependency or capacity
-  problems, but FR-11 currently records neither. Blocks an accurate North
-  Star measurement and FEAT-003 period-close detail. Ask the operator.
-  FEAT-003 provisionally uses "items in the period at close" with no reason.
 - [ ] How should two editors' conflicting saves to the same roadmap be
-  resolved (FR-19 makes this possible)? Blocks the persistence design. It
-  will be decided in Design.
-- [ ] Confirm the numeric limits and targets the feature specs record as
-  assumptions: import size, RICE input ranges, password and session policy,
-  invitation expiry, and latency targets. Blocks nothing in Frame, but tests
-  in Design will hard-code them. Ask the operator.
-- [ ] Is there a pricing or packaging decision that would change v1 scope?
-  It would block the business case. Ask the operator.
+  resolved (FR-19 makes this possible)? Blocks the persistence design.
+  Decided in Design.
 - [ ] Should the stack selections in Technical Context be ratified as ADRs?
-  Blocks nothing in Frame. Resolved in Design.
+  Blocks nothing in Frame. Decided in Design.
+
+Resolved by the operator on 2026-11-10:
+
+- [x] Datastore: PostgreSQL.
+- [x] LLM provider: Anthropic Claude, through model-gateway aliases. The
+  alias set is decided in Design.
+- [x] A dependent item in the same period as its blocker is a warning
+  (FR-10).
+- [x] A period's commitment is recorded at an explicit period start, and
+  every slip records a reason: dependency, capacity, or other (FR-11).
+- [x] Shipped and dropped items are archived at close, and slipped items
+  return to the backlog (FR-11).
+- [x] The numeric limits and targets in the feature specs are accepted as
+  working values. Change them through `evolve`.
+- [x] No pricing or packaging decision constrains v1.
 
 ## Success Criteria
 
